@@ -59,10 +59,13 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches the listings file for items whose text matches the user's description, optionally filtered by size and a max price.
+- **Inputs:**
+  - `description` (str): keywords for what the user wants, e.g. "vintage graphic tee".
+  - `size` (str | None): the size the user wants. None means no size filtering. Size rule: a letter size (S, M, L, XL) matches any listing whose size contains that letter size as a whole word, case-insensitive, so `M` matches `M`, `S/M` and `M/L`, but not the "m" inside another word. `One Size` listings always match. Listings that use a different size system (shoe sizes like `US 9`, waist sizes like `W30`) are not filtered out by size; the keyword score decides whether they appear.
+  - `max_price` (float | None): the highest price the user will pay, inclusive. None means no price filtering.
+- **Returns:** A list of up to 10 listing dicts (`config.SEARCH_RESULT_LIMIT`), sorted by keyword-overlap score, highest first. The score counts how many words from `description` appear in the listing's title, description and style_tags. Each dict has `id`, `title`, `description`, `category`, `style_tags` (list), `size`, `condition`, `price` (float), `colors` (list), `brand` (str or None), `platform`.
+- **When it has nothing:** Returns an empty list `[]`, never None and never an error. That happens when no listing passes the filters, or every listing scores 0.
 
 ### `suggest_outfit`
 
