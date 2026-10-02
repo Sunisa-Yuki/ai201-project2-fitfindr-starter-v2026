@@ -69,17 +69,21 @@
 
 ### `suggest_outfit`
 
-- **What it does:**
+- **What it does:** Takes the thrifted item and the user's wardrobe and asks the model to suggest one or two outfits built around the item.
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `new_item` (dict): one listing dict, the item found by `search_listings` (fields: `title`, `category`, `colors`, `style_tags`, `price`, …)
+  - `wardrobe` (dict): has an `"items"` key holding a list of wardrobe-item dicts (each with `name`, `category`, `colors`, `style_tags`, `notes`). The list may be empty.
+- **Returns:** A non-empty string with one or two outfit ideas that name specific pieces from the user's wardrobe by their `name`.
+- **When it has nothing:** If `wardrobe["items"]` is empty, it returns general styling advice for the item, instead of an empty string `""` or raising an error.
 
 ### `create_fit_card`
 
-- **What it does:**
+- **What it does:** Writes a short caption someone would actually post about their thrift find.
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `outfit` (str): the outfit suggestion string from `suggest_outfit()`.
+  - `new_item` (dict): the listing dict for the item.
+- **Returns:** A two-to-four sentence caption that reads like a real post, not a product description. It mentions the item's title, price and platform once each, and is specific about the vibe.
+- **When it has nothing:** If `outfit` is empty or only spaces, it returns the message "Can't write a fit card: no outfit suggestion was provided." instead of raising an error.
 
 ---
 
