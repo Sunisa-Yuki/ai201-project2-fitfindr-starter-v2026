@@ -100,9 +100,13 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+
+**Branch rule:** After calling `search_listings`, the agent checks the result.
+- If it returns an empty list `[]`, the agent saves a message in `session` that tells the user what to change (for example "No matches. Try a higher max price, a different size, or fewer keywords."), leaves `fit_card` as None, and stops. It does **not** call `suggest_outfit`.
+- Otherwise, it takes the first (best-scoring) result, saves it as `session["selected_item"]`, and passes it to `suggest_outfit`, then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
+
 
 **How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
 
