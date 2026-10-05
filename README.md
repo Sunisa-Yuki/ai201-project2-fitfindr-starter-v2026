@@ -41,7 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
-
+A user types what they're looking for, like "vintage graphic tee under $30, size M". FitFindr searches 40 thrift listings, picks the best match, suggests one or two outfits using clothes from the user's wardrobe, and writes a short social-media caption about the find. If nothing matches, it stops early and tells the user what to change (price, size or keywords).
 
 ---
 
@@ -108,65 +108,62 @@
 **Where it lives:** `agent.py::run_agent`
 
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex in `agent.py::run_agent`. "under $30" becomes max_price, "size M" becomes size, and the rest of the text is the description. Result is saved in `session["parsed"]`.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `parsed` → `search_results` → `selected_item` (first result) → `outfit_suggestion` → `fit_card`. If the search is empty, `error` is set and the last three stay None.
 
 ---
 
 ## Sample Run
 
-<!-- Two things go here.
-
-     1. One FULL query and its output, pasted as text.
-     2. Your three per-tool terminal tests — the command and what it printed. -->
-
-**One full query**
+**One full query** (`python agent.py`, which runs `agent.py::run_agent` on two queries)
 
 ```
-$ python app.py ask '...'
+$ python agent.py
+=== A query the data can match ===
+  found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+  outfit:   **Outfit 1: Casual Y2K Streetwear**
+Pair the butterfly baby tee with your **baggy straight-leg jeans** and layer the **black cropped zip hoodie** over top (left unzipped). Finish with **chunky white sneakers** and the **black crossbodybag**.
 
+**Outfit 2: Soft Contrast**
+Tuck the baby tee into your **wide-leg khaki trousers**, worn with the **brown leather belt**. Layer the **vintage black denim jacket** on top and ground the look with **black combat boots**.
+  fit card: Scored this Y2K butterfly baby tee for just $18 on Depop and I'm obsessed. Living out my early 2000s dreams today—either styling it supercasual with baggy jeans and chunky sneakers, or leaning into that edgy-sweet contrast with khaki trousers and combat boots. Which vibe are we voting for? 🦋✨
+
+=== A query it can't ===
+  stopped: No listings matched 'designer ballgown'. To find something, raise your max price above $5, or try a different size than XXS or leave size out, or use fewer or more common keywords (e.g. 'graphic tee', 'flannel', 'jeans').
+  fit_card is None — it should still be None here
 ```
 
 **The three tools, tested one at a time**
 
 ```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+$ python -c "from tools import *; from utils.data_loader import *; r=search_listings('graphic tee','M',30); print('SEARCH:', [(x['title'],x['price']) for x in r]); print('EMPTY:', search_listings('ballgown','XXS',5)); print('OUTFIT:', suggest_outfit(r[0], get_example_wardrobe())); print('CARD:', create_fit_card('baggy jeans and sneakers', r[0])); print('EMPTY CARD:', create_fit_card('', r[0]))"
+SEARCH: [('Y2K Baby Tee — Butterfly Print', 18.0), ('Mesh Long-Sleeve Top — Black', 15.0), ('Low-Rise Cargo Pants — Khaki', 27.0)]
+EMPTY: []
+OUTFIT: **Outfit 1: Casual Y2K Streetwear**
+Pair the butterfly baby tee with your **baggy straight-leg jeans** and layer the **black cropped zip hoodie** over top (left unzipped). Finish with **chunky white sneakers** and the **black crossbody bag**.
 
-```
-
-```
-$ python -c "from tools import suggest_outfit; ..."
-
-```
-
-```
-$ python -c "from tools import create_fit_card; ..."
-
+**Outfit 2: Soft Contrast**
+Tuck the baby tee into your **wide-leg khaki trousers**, worn with the **brown leather belt**. Layer the **vintage black denim jacket** on top and ground the look with **black combat boots**.
+CARD: Scored this dreamy butterfly print Y2K baby tee on Depop for just $18 andit's officially my new personality. Paired it with my favorite baggy jeans and sneakers for that ultimate 2000s mall rat energy. ✨🦋
+EMPTY CARD: Can't write a fit card: no outfit suggestion was provided.
 ```
 
 ---
 
 ## How I Used AI
 
-<!-- Two specific moments. What you asked, what came back, what you changed.
-
-     "I used Claude to help me code" is not enough.
-
-     "I gave Claude my search_listings spec. It returned None on no match
-     instead of an empty list, so I changed it" is the level we want. -->
-
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Help deciding the size rule for search_listings. My idea was to code an international size chart.
+- *What came back:* Claude showed the data only has three size types (letters like M, shoes like US 9, waists like W30), so a size chart wasn't needed.
+- *What I changed:* I picked a simpler rule: letter sizes match as whole words (M matches S/M and M/L), One Size always matches, and shoe/waist sizes are left to the keyword score.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Near the deadline, I asked Claude to implement tools.py and agent.py from my Tool Inventory spec, and to help word criteria 3–5.
+- *What came back:* Working code for the three tools and the loop, plus draft criteria wording.
+- *What I changed:* I ran `python agent.py` and checked the match path used all three tools and the impossible query stopped with fit_card None. For the criteria, I added my own example ("babytee") and checked each reason against how my code works.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
