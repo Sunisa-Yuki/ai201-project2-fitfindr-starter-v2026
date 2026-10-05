@@ -78,8 +78,28 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+    import re
+    words = [w for w in re.findall(r"[a-z0-9']+", description.lower()) if len(w) > 1]
+    letter_sizes = {"xxs", "xs", "s", "m", "l", "xl", "xxl"}
+    want = size.strip().lower() if size else None
+    results = []
+    for item in load_listings():
+        if max_price is not None and item["price"] > max_price:
+            continue
+        if want:
+            item_size = item["size"].lower()
+            tokens = re.findall(r"[a-z0-9.]+", item_size)
+            uses_letters = any(t in letter_sizes for t in tokens)
+            if "one size" in item_size or not uses_letters:
+                pass  # One Size always matches; shoe/waist sizes aren't filtered by size
+            elif want not in tokens:
+                continue
+        text = " ".join([item["title"], item["description"], " ".join(item["style_tags"])]).lower()
+        score = sum(1 for w in words if w in text)
+        if score > 0:
+            results.append((score, item))
+    results.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for _, item in results[: config.SEARCH_RESULT_LIMIT]]
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
@@ -112,8 +132,20 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    item_text = (f"{new_item['title']} ({new_item['category']}, colors: "
+                 f"{', '.join(new_item['colors'])}, style: {', '.join(new_item['style_tags'])})")
+    items = wardrobe.get("items", []) if wardrobe else []
+    if not items:
+        prompt = (f"I'm thinking of buying this thrifted item: {item_text}. "
+                  "I haven't shared my wardrobe. Give general styling advice: one or two outfit "
+                  "ideas built around it, in a few short sentences.")
+    else:
+        owned = "\n".join(f"- {w['name']} ({w['category']}, {', '.join(w['colors'])})" for w in items)
+        prompt = (f"I'm thinking of buying this thrifted item: {item_text}.\n"
+                  f"My wardrobe:\n{owned}\n"
+                  "Suggest one or two outfits built around the new item, naming specific pieces "
+                  "from my wardrobe by name. Keep it short.")
+    return generate(prompt)
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
@@ -152,5 +184,11 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    if not outfit or not outfit.strip():
+        return "Can't write a fit card: no outfit suggestion was provided."
+    prompt = (f"Write a 2-4 sentence social media caption about a thrift find. "
+              f"Item: {new_item['title']}, ${new_item['price']:.0f} on {new_item['platform']}. "
+              f"Outfit: {outfit}\n"
+              "Mention the item, price and platform once each. Make it read like a real post, "
+              "not a product description, and be specific about the vibe.")
+    return generate(prompt)

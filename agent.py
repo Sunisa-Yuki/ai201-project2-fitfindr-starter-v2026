@@ -107,8 +107,45 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    import re
+    steps = 0
+
+    # Parse the query (regex): price after "under $", size after "size", rest is description.
+    steps += 1; trace.check_iterations(steps)
+    price_match = re.search(r"under\s*\$?\s*(\d+(?:\.\d+)?)", query, re.I)
+    size_match = re.search(r"\bsize\s+([a-z0-9.]+)", query, re.I)
+    description = re.sub(r"under\s*\$?\s*\d+(?:\.\d+)?|\bsize\s+[a-z0-9.]+|,", " ", query, flags=re.I)
+    session["parsed"] = {
+        "description": " ".join(description.split()),
+        "size": size_match.group(1) if size_match else None,
+        "max_price": float(price_match.group(1)) if price_match else None,
+    }
+
+    # Step 1: search
+    steps += 1; trace.check_iterations(steps)
+    p = session["parsed"]
+    session["search_results"] = search_listings(p["description"], p["size"], p["max_price"])
+
+    # BRANCH: empty search -> stop with a message saying what to change
+    if not session["search_results"]:
+        tips = []
+        if p["max_price"] is not None:
+            tips.append(f"raise your max price above ${p['max_price']:.0f}")
+        if p["size"]:
+            tips.append(f"try a different size than {p['size']} or leave size out")
+        tips.append("use fewer or more common keywords (e.g. 'graphic tee', 'flannel', 'jeans')")
+        session["error"] = (f"No listings matched '{p['description']}'. To find something, "
+                            + ", or ".join(tips) + ".")
+        return session
+
+    # Step 2: pick the best result and suggest an outfit (read from session)
+    steps += 1; trace.check_iterations(steps)
+    session["selected_item"] = session["search_results"][0]
+    session["outfit_suggestion"] = suggest_outfit(session["selected_item"], session["wardrobe"])
+
+    # Step 3: fit card (read from session)
+    steps += 1; trace.check_iterations(steps)
+    session["fit_card"] = create_fit_card(session["outfit_suggestion"], session["selected_item"])
     return session
 
 
