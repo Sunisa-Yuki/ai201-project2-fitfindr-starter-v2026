@@ -29,6 +29,8 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
+My search is a simple keyword match. If someone uses words that aren't in the listing (like "shirt" instead of "tee" or "babytee"), it can miss, so I allow 1 miss out of 5.
+
 ---
 
 ## 2. An impossible query stops before the second tool
@@ -39,6 +41,8 @@ Given a query that matches no listings, the agent stops before calling
 **Why this target:**
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
+
+The empty-search check is plain Python code (if the list is empty, stop) and there's no AI involved, so it should behave the same every time. 5 of 5.
 
 ---
 
@@ -54,10 +58,10 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
+For 5 matching queries, the `id` of session["selected_item"] is the same as the `id` of the item passed into suggest_outfit — in 5 of 5 tries.
 
 
-**Why this target:**
-
+**Why this target:** The item is saved in the session and read back out by code, also not by the AI. If even one id is different, the state is broken, so I don't allow any misses.
 
 
 ---
@@ -75,9 +79,9 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
+For 5 matching queries, the fit card is 2 to 4 sentences long and mentions both the item's price and its platform (like "$18" and "Depop") — in at least 4 of 5 tries.
 
-
-**Why this target:**
+**Why this target:** The caption is written by the AI, so the words change every run. Sometimes it may skip the price or write too much, so I allow 1 miss.
 
 
 
@@ -92,9 +96,9 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
+For 5 queries that include a max price (like "under $30"), every listing search_listings returns costs that amount or less — in 5 of 5 tries.
 
-
-**Why this target:**
+**Why this target:** The price filter is a simple number comparison in my code, not AI. If any item costs more than the user's limit, the filter is broken.
 
 
 
